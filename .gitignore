@@ -1,0 +1,5 @@
+#The files by pydev
+.project
+.pydevproject
+.settings/
+src/__pycache__/

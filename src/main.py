@@ -43,6 +43,7 @@ def similarity(inp_case, case):
                       'sig_note_p1':0.8, 'sig_note_p2':0.5}.items():
         if inp_case.features[note].features['tone'] == case.features[note].features['tone']:
             s_value = s_value + w * (1-s_value)
+    print(s_value)
     return s_value
 
 def modify_case():
