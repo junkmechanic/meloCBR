@@ -35,5 +35,5 @@ class Note(object):
     def __str__(self):
         rtnstring = ''
         for feature in self.nt_features:
-            rtnstring += "{} -> {}  ;".format(feature, self.features[feature])
+            rtnstring += "{} -> {}  ; ".format(feature, self.features[feature])
         return rtnstring

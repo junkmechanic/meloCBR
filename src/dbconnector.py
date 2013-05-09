@@ -24,9 +24,11 @@ class DbConnect(object):
 
 
 @contextmanager
-def grant_connection():
+def grant_connection(commit=False):
     dbcon = DbConnect()
     try:
         yield dbcon
     finally:
+        if commit:
+            dbcon.dbcon.commit()
         dbcon.close()

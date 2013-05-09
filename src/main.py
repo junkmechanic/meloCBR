@@ -16,13 +16,12 @@ def build_cases(query):
                     case.features[note] = Note(*dbconnect.get_note(nquery)
                                                .fetchone())
             for notes in ['other_notes', 'hother']:
-                # TO BE TESTED
-                if case.features[notes] is not None:
-                    notelist = list(eval(case.features[notes]))
+                if case.features[notes] != 'None':
+                    notelist = eval(case.features[notes])
                     newlist = []
                     for n in notelist:
                         query = "SELECT * FROM NOTEBASE WHERE NID = " + str(n)
-                        newlist.append(Note(*dbconnect.execute_query(query).
+                        newlist.append(Note(*dbconnect.get_note(query).
                                             fetchone()))
                     case.features[notes] = newlist
             yield case
