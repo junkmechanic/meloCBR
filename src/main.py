@@ -59,6 +59,7 @@ def modify_case():
 
 
 def main():
+    #for inp_case in get_case('input_piece'):  get_case() is from casemaker.py
     inp_case = process_input()
     for case in retrieve_cases(inp_case):
         modify_case()
