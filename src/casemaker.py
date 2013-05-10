@@ -79,7 +79,7 @@ def build_case(piece):
     carry will be used if a note's duration is longer than the beat duartion
     these values are not being considered for now
     """
-    query = "SELECT * FROM " + piece + " WHERE ID > 4"
+    query = "SELECT * FROM " + piece
     with grant_connection() as qdb:
         nquery = "SELECT Key, Time_Sig FROM METATABLE WHERE Table_Name = '"\
                  + piece + "'"
