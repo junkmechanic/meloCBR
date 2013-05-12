@@ -20,6 +20,12 @@ class Case(object):
             rtnstring += "{} : {}\n".format(feature, self.features[feature])
         return rtnstring
 
+    def __getitem__(self, index):
+        return self.features[index]
+
+    def __setitem__(self, key, value):
+        self.features[key] = value
+
 
 class Note(object):
 
@@ -37,3 +43,9 @@ class Note(object):
         for feature in self.nt_features:
             rtnstring += "{} -> {}  ; ".format(feature, self.features[feature])
         return rtnstring
+
+    def __getitem__(self, index):
+        return self.features[index]
+
+    def __setitem__(self, key, value):
+        self.features[key] = value

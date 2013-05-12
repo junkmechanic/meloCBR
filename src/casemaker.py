@@ -38,23 +38,23 @@ def insert_case(case, commit=False):
     """
     with grant_connection(commit) as dbcon:
         for note in ['signif_note', 'htreb', 'hmid', 'hbass']:
-            if case.features[note] is not None:
-                insert_note(case.features[note], dbcon)
-                case.features[note] = case.features[note].features['id']
+            if case[note] is not None:
+                insert_note(case[note], dbcon)
+                case[note] = case[note]['id']
             else:
-                case.features[note] = 'null'
+                case[note] = 'null'
         for notes in ['other_notes', 'hother']:
-            if case.features[notes] is not None:
-                for note in case.features[notes]:
+            if case[notes] is not None:
+                for note in case[notes]:
                     insert_note(note, dbcon)
-                    n = case.features[notes].index(note)
-                    case.features[notes][n] = note.features['id']
+                    n = case[notes].index(note)
+                    case[notes][n] = note['id']
         for note in ['sig_note_m1', 'sig_note_m2', 'sig_note_p1',
                      'sig_note_p2']:
-            if case.features[note] is not None:
-                case.features[note] = case.features[note].features['id']
+            if case[note] is not None:
+                case[note] = case[note]['id']
             else:
-                case.features[note] = 'null'
+                case[note] = 'null'
         query = ("INSERT INTO CASEBASE VALUES ({id}, '{key}', {dos}, "
                  "{cadence}, {signif_note}, '{other_notes}', {sig_note_m1}, "
                  "{sig_note_m2}, {sig_note_p1}, {sig_note_p2}, {htreb}, "
