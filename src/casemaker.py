@@ -72,6 +72,20 @@ def insert_note(note, note_con):
     note_con.execute(query)
 
 
+def next_case_num():
+    with grant_connection() as qdb:
+        nquery = "SELECT MAX(ID) FROM CASEBASE"
+        case_num = qdb.execute(nquery).fetchone()[0] + 1
+    return case_num
+
+
+def next_note_num():
+    with grant_connection() as qdb:
+        nquery = "SELECT MAX(NID) FROM NOTEBASE"
+        note_num = qdb.execute(nquery).fetchone()[0] + 1
+    return note_num
+
+
 def build_case(piece):
     """
     bpm is beat per measure
@@ -84,103 +98,101 @@ def build_case(piece):
         nquery = "SELECT Key, Time_Sig FROM METATABLE WHERE Table_Name = '"\
                  + piece + "'"
         # start position is also required from the query ( = received -1 )
-        pos_meas = 0
         metadata = qdb.execute(nquery).fetchone()
         scale = Scale(metadata[0])
+        pos_meas = 0
         #bpm = int(metadata[1].split('/')[0])
         #btdrn = int(metadata[1].split('/')[1])
         btdrn = 4
-        carry = []
-        nquery = "SELECT MAX(ID) FROM CASEBASE"
-        case_num = qdb.execute(nquery).fetchone()[0] + 1
-        nquery = "SELECT MAX(NID) FROM NOTEBASE"
-        note_num = qdb.execute(nquery).fetchone()[0] + 1
-        for row in get_next_beat(query):
-            case = [case_num, 'M', 1.0, 0]
-            sig_note_flag = False
-            other_notes = []
-            hother = []
-            if row[1] is not None:
-                pos_beat = 1
-                for ntgrp in row[1].split(','):
-                    match = re.search(r'(\w+)(\d)', ntgrp)
-                    note = match.group(1)
-                    duration = int(match.group(2))
-                    # following code is not being used for now
-                    if btdrn / duration > 1:
-                        carry.append((note, 1 / (1 / duration - 1 / btdrn)))
-                        duration = btdrn
-                    # --------------------
-                    try:
-                        degree = scale.diatonic[note]
-                    except KeyError:
-                        print('Warning : Case :' + str(case_num) + ' '
-                              + note + ' is not in the diatonic scale')
-                        degree = 0
-                    if not sig_note_flag:
-                        case.append(Note(note_num, scale.chromatic[note],
-                                         degree, duration, pos_beat,
-                                         pos_meas + 1))
-                        sig_note_flag = True
-                    else:
-                        other_notes.append(Note(note_num,
-                                                scale.chromatic[note],
-                                                degree, duration, 2,
-                                                pos_meas + 1))
-                    note_num += 1
-                if len(other_notes) == 0:
-                    case.append(None)
+    carry = []
+    case_num = next_case_num()
+    note_num = next_note_num()
+    for row in get_next_beat(query):
+        case = [case_num, 'M', 1.0, 0]
+        sig_note_flag = False
+        other_notes = []
+        hother = []
+        if row[1] is not None:
+            pos_beat = 1
+            for ntgrp in row[1].split(','):
+                match = re.search(r'(\w+)(\d)', ntgrp)
+                note = match.group(1)
+                duration = int(match.group(2))
+                # following code is not being used for now
+                if btdrn / duration > 1:
+                    carry.append((note, 1 / (1 / duration - 1 / btdrn)))
+                    duration = btdrn
+                # --------------------
+                try:
+                    degree = scale.diatonic[note]
+                except KeyError:
+                    print('Warning : Case :' + str(case_num) + ' '
+                          + note + ' is not in the diatonic scale')
+                    degree = 0
+                if not sig_note_flag:
+                    case.append(Note(note_num, scale.chromatic[note],
+                                degree, duration, pos_beat,
+                                pos_meas + 1))
+                    sig_note_flag = True
                 else:
-                    case.append(other_notes)
+                    other_notes.append(Note(note_num,
+                                            scale.chromatic[note],
+                                            degree, duration, 2,
+                                            pos_meas + 1))
+                note_num += 1
+            if len(other_notes) == 0:
+                case.append(None)
             else:
-                case.extend([None, None])
-            if row[2] is not None:
-                #pdb.set_trace()
-                harmony = {'t': None, 'm': None, 'b': None}
-                pos_beat = 1
-                next_note = 't'
-                # 't' : trebble, 'm' : mid, 'b' : bass
-                switch_other = False
-                for ntgrp in row[2].split(','):
-                    match = re.search(r'(\w+)(\d)', ntgrp)
-                    note = match.group(1)
-                    duration = int(match.group(2))
-                    try:
-                        degree = scale.diatonic[note]
-                    except KeyError:
-                        print('Warning : Case : ' + str(case_num) + '. '
-                              + note + ' is not in the diatonic scale')
-                        degree = 0
-                    if switch_other:
-                        hother.append(Note(note_num, scale.chromatic[note],
-                                           degree, duration, 2, pos_meas + 1))
-                        switch_other = False
-                        if next_note == 't':
-                            next_note = 'm'
-                        else:
-                            next_note = 'b'
+                case.append(other_notes)
+        else:
+            case.extend([None, None])
+        if row[2] is not None:
+            #pdb.set_trace()
+            harmony = {'t': None, 'm': None, 'b': None}
+            pos_beat = 1
+            next_note = 't'
+            # 't' : trebble, 'm' : mid, 'b' : bass
+            switch_other = False
+            for ntgrp in row[2].split(','):
+                match = re.search(r'(\w+)(\d)', ntgrp)
+                note = match.group(1)
+                duration = int(match.group(2))
+                try:
+                    degree = scale.diatonic[note]
+                except KeyError:
+                    print('Warning : Case : ' + str(case_num) + '. '
+                          + note + ' is not in the diatonic scale')
+                    degree = 0
+                if switch_other:
+                    hother.append(Note(note_num, scale.chromatic[note],
+                                       degree, duration, 2, pos_meas + 1))
+                    switch_other = False
+                    if next_note == 't':
+                        next_note = 'm'
                     else:
-                        harmony[next_note] = Note(note_num,
-                                                  scale.chromatic[note],
-                                                  degree, duration, pos_beat,
-                                                  pos_meas + 1)
-                        if duration == btdrn and next_note == 't':
-                            next_note = 'm'
-                        elif duration == btdrn and next_note == 'm':
-                            next_note = 'b'
-                        else:
-                            switch_other = True
-                    note_num += 1
-                case.extend([harmony['t'], harmony['m'], harmony['b']])
-                if len(hother) == 0:
-                    case.append(None)
+                        next_note = 'b'
                 else:
-                    case.append(hother)
+                    harmony[next_note] = Note(note_num,
+                                              scale.chromatic[note],
+                                              degree, duration, pos_beat,
+                                              pos_meas + 1)
+                    if duration == btdrn and next_note == 't':
+                        next_note = 'm'
+                    elif duration == btdrn and next_note == 'm':
+                        next_note = 'b'
+                    else:
+                        switch_other = True
+                note_num += 1
+            case.extend([harmony['t'], harmony['m'], harmony['b']])
+            if len(hother) == 0:
+                case.append(None)
             else:
-                case.extend([None, None, None, None])
-            pos_meas = (pos_meas + 1) % btdrn
-            case_num += 1
-            yield case
+                case.append(hother)
+        else:
+            case.extend([None, None, None, None])
+        pos_meas = (pos_meas + 1) % btdrn
+        case_num += 1
+        yield case
 
 
 def get_case(piece):

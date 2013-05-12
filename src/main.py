@@ -36,38 +36,41 @@ def retrieve_cases(inp_case):
     for case in build_cases(query):
         fav_cases.update({case: similarity(inp_case, case)})
     for ele in sorted(fav_cases.items(), key=itemgetter(1), reverse=True):
-        yield(ele)
-        #if(ele[0] > 0.8):
-        #    yield ele
+        if(ele[0] > 0.8):
+            print(ele)
+            yield ele
 
 
 def similarity(inp_case, case):
     s_value = 0.5
-    for note, w in {'sig_note_m1': 0.9, 'sig_note_m2': 0.5,
-                    'sig_note_p1': 0.9, 'sig_note_p2': 0.5}.items():
-        if (inp_case[note] is not None) and \
-           (case[note] is not None):
-            i = inp_case[note]['tone']
-            c = case[note]['tone']
-            if i == c:
+    for note, w in {'sig_note_m1': 0.6, 'sig_note_m2': 0.3,
+                    'sig_note_p1': 0.6, 'sig_note_p2': 0.3}.items():
+        if (inp_case[note] is not None) and (case[note] is not None):
+            if inp_case[note]['tone'] == case[note]['tone']:
                 s_value = s_value + w * (1 - s_value)
     return s_value
 
 
-def modify_case():
-    pass
+def adapt_case(inp_case, case_list):
+    if case_list:
+        best_case, similarity = case_list[0]
+        if similarity > 0.9:
+            for key in ['htreb', 'hmid', 'hbass', 'hother']:
+                inp_case[key] = best_case[key]
+    print(inp_case)
 
 
 def process_input():
     inp_cases = [case for case in get_case('input1')]
-    return inp_cases[2]
+    for case in inp_cases:
+        yield case
 
 
 def main():
-    inp_case = process_input()
-    print(inp_case)
-    for case in retrieve_cases(inp_case):
-        print(case)
+    for inp_case in process_input():
+        #print(inp_case)
+        cases = [case for case in retrieve_cases(inp_case)]
+        adapt_case(inp_case, cases)
 
 if __name__ == '__main__':
     sys.exit(main())
