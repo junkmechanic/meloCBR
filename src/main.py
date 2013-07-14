@@ -3,6 +3,7 @@ from dbconnector import grant_connection
 from casestructure import Case, Note
 from casemaker import get_case
 from operator import itemgetter
+from output import LilyFile
 
 
 def build_cases(query):
@@ -82,7 +83,8 @@ def main():
         cases = [case for case in retrieve_cases(inp_case)]
         adapt_case(inp_case, cases)
         output_buffer.append(inp_case)
-    print(output_buffer)
+    #print(output_buffer)
+    LilyFile('input1', output_buffer)
 
 if __name__ == '__main__':
     sys.exit(main())

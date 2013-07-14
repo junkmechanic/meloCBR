@@ -1,3 +1,5 @@
+import os
+from subprocess import call
 from dbconnector import grant_connection
 
 
@@ -5,46 +7,46 @@ TEMPLATE = """
 \\version "2.16.0"
 
 \score
-  {
+  {{
     \\new PianoStaff
       <<
         \\new Staff
-          {
+          {{
             \key f \major
             \\time 4/4
             \clef "treble"
             \\relative c''
-              {
+              {{
                 {melody}
-              }
-          }
+              }}
+          }}
         \\new Staff
-          {
+          {{
             \key f \major
             \\time 4/4
             \clef "bass"
             <<
               \\relative c''
-                {
+                {{
                   {htreb}
-                }
+                }}
               \\relative c'
-                {
+                {{
                   {hmid}
-                }
+                }}
               \\relative c
-                {
+                {{
                   {hbass}
-                }
+                }}
             >>
-          }
+          }}
       >>
     \midi
-      {
+      {{
         \\tempo 4 = 80
-      }
-    \layout  { }
-  }
+      }}
+    \layout  {{ }}
+  }}
 """
 
 
@@ -68,6 +70,7 @@ class LilyFile:
         self.key = self.get_key()
         self.length = 0
         self.content = self.generate_content(case_list)
+        self.compile()
 
     def get_key(self):
         """
@@ -79,7 +82,7 @@ class LilyFile:
             nquery = "SELECT Key FROM METATABLE "
             "WHERE Table_Name = '" + self.name + "'"
             key = qdb.execute(nquery).fetchone()[0]
-        return key
+        return key.lower()
 
     def generate_content(self, case_list):
         scale = LilyScale(self.key)
@@ -89,15 +92,21 @@ class LilyFile:
         if(init_rests > 1):
             for i in range(init_rests - 1):
                 self.length += 1
-                for str in filler:
-                    str += 'r '
+                filler = map(lambda s: s + 'r ', filler)
         for case in case_list:
             self.length += 1
             cntr = 0
             for note in notes:
-                filler[cntr] += scale.chromatic[case[note]['tone']]
+                filler[cntr] += scale.chromatic[case[note]['tone']] + ' '
                 cntr += 1
             if(self.length % 4 == 0):
                 filler = map(lambda s: s + '| ', filler)
         return TEMPLATE.format(melody=filler[0], htreb=filler[1],
                                hmid=filler[2], hbass=filler[3])
+
+    def compile(self):
+        os.chdir('/home/ankur/home/ankur')
+        filename = '{}.ly'.format(self.name)
+        with open(filename, 'w') as outfile:
+            outfile.write(self.content)
+        call(['lilypond', filename])
