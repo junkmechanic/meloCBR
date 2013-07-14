@@ -55,6 +55,7 @@ def insert_case(case, commit=False):
                 case[note] = case[note]['id']
             else:
                 case[note] = 'null'
+        # Include logic for cadence
         query = ("INSERT INTO CASEBASE VALUES ({id}, '{key}', {dos}, "
                  "{cadence}, {signif_note}, '{other_notes}', {sig_note_m1}, "
                  "{sig_note_m2}, {sig_note_p1}, {sig_note_p2}, {htreb}, "
@@ -65,7 +66,7 @@ def insert_case(case, commit=False):
 def insert_note(note, note_con):
     """
     This function needs the same connection object as the one for inserting
-    cases as all the insertions have to be commited.
+    cases since all the insertions have to be commited.
     """
     query = ("INSERT INTO NOTEBASE VALUES ({id}, {tone}, {degree}, "
              "{duration}, {pos_beat}, {pos_meas})".format(**note.features))
@@ -75,15 +76,21 @@ def insert_note(note, note_con):
 def next_case_num():
     with grant_connection() as qdb:
         nquery = "SELECT MAX(ID) FROM CASEBASE"
-        case_num = qdb.execute(nquery).fetchone()[0] + 1
-    return case_num
+        case_num = qdb.execute(nquery).fetchone()[0]
+        if case_num:
+            return int(case_num) + 1
+        else:
+            return 1
 
 
 def next_note_num():
     with grant_connection() as qdb:
         nquery = "SELECT MAX(NID) FROM NOTEBASE"
-        note_num = qdb.execute(nquery).fetchone()[0] + 1
-    return note_num
+        note_num = qdb.execute(nquery).fetchone()[0]
+        if note_num:
+            return int(note_num) + 1
+        else:
+            return 1
 
 
 def build_case(piece):
@@ -95,12 +102,11 @@ def build_case(piece):
     """
     query = "SELECT * FROM " + piece
     with grant_connection() as qdb:
-        nquery = "SELECT Key, Time_Sig FROM METATABLE WHERE Table_Name = '"\
-                 + piece + "'"
-        # start position is also required from the query ( = received -1 )
+        nquery = "SELECT Key, Time_Sig, Start FROM METATABLE "
+        "WHERE Table_Name = '" + piece + "'"
         metadata = qdb.execute(nquery).fetchone()
         scale = Scale(metadata[0])
-        pos_meas = 0
+        pos_meas = int(metadata[2]) - 1
         #bpm = int(metadata[1].split('/')[0])
         #btdrn = int(metadata[1].split('/')[1])
         btdrn = 4
@@ -223,7 +229,7 @@ def get_case(piece):
 def populate_db():
     """
     The cases had to be collected in a list so that all the other connections
-    to the database could be closed.
+    to the database could be closed before committing to it.
     """
     piece = 'bwv1p6'
     cases = [case for case in get_case(piece)]

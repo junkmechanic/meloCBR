@@ -25,6 +25,14 @@ control over when the transactions would be commited, since it is not desirable
 to commit the databse if there is an error midway while inserting cases from a
 piece.
 
+Pending Changes:
+1. Efficient storage of notes. Using the same note for different cases. Will
+   involve major change in the casemaker module. From what I can imagine, the
+insert case function will need a list of all the possible combinations of
+distinct note objects that it will compare the current note with. If found,
+then the current note can be discarded and the NID of the existing note and be
+returned to the insertcase function to be stored as the link to this existing
+note for the current case.
 
 Lessons learnt:
 1. Use ORM.
