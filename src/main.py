@@ -57,15 +57,17 @@ def similarity(inp_case, case):
 def adapt_case(inp_case, case_list):
     if case_list:
         best_case, similarity = case_list[0]
-        if similarity > 0.9:
-            for key in ['htreb', 'hmid', 'hbass', 'hother']:
-                inp_case[key] = best_case[key]
+        #if similarity > 0.9:
+        # commenting the above line simply to help in coding the output
+        # generation module.
+        for key in ['htreb', 'hmid', 'hbass', 'hother']:
+            inp_case[key] = best_case[key]
+
     # Include logic for cadences
     # For non cadence cases, choose a chord from the possible realm,
     # and match it with the surrounding notes. Next based on the motion of the
     # preceding harmony, decide on the inversion. A more complex logic to
     # include the following notes can be intrduced later.
-    print(inp_case)
 
 
 def process_input():
@@ -75,10 +77,12 @@ def process_input():
 
 
 def main():
+    output_buffer = []
     for inp_case in process_input():
-        #print(inp_case)
         cases = [case for case in retrieve_cases(inp_case)]
         adapt_case(inp_case, cases)
+        output_buffer.append(inp_case)
+    print(output_buffer)
 
 if __name__ == '__main__':
     sys.exit(main())
