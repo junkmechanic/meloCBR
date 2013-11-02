@@ -12,7 +12,7 @@ TEMPLATE = """
       <<
         \\new Staff
           {{
-            \key f \major
+            \key {key} \major
             \\time 4/4
             \clef "treble"
             \\relative c''
@@ -22,7 +22,7 @@ TEMPLATE = """
           }}
         \\new Staff
           {{
-            \key f \major
+            \key {key} \major
             \\time 4/4
             \clef "bass"
             <<
@@ -79,8 +79,8 @@ class LilyFile:
         modules have no room for a quick fix and this has to do for now.
         """
         with grant_connection() as qdb:
-            nquery = "SELECT Key FROM METATABLE "
-            "WHERE Table_Name = '" + self.name + "'"
+            nquery = "SELECT Key FROM METATABLE " + \
+                     "WHERE Table_Name = '" + self.name + "'"
             key = qdb.execute(nquery).fetchone()[0]
         return key.lower()
 
@@ -97,11 +97,16 @@ class LilyFile:
             self.length += 1
             cntr = 0
             for note in notes:
-                filler[cntr] += scale.chromatic[case[note]['tone']] + ' '
+                if case[note]:
+                    filler[cntr] += scale.chromatic[case[note]['tone']] + ' '
+                else:
+                    #filler[cntr] += filler[cntr][-2:]
+                    print("Error with case!!")
+                    print(case)
                 cntr += 1
             if(self.length % 4 == 0):
-                filler = map(lambda s: s + '| ', filler)
-        return TEMPLATE.format(melody=filler[0], htreb=filler[1],
+                filler = list(map(lambda s: s + '| ', filler))
+        return TEMPLATE.format(key=self.key, melody=filler[0], htreb=filler[1],
                                hmid=filler[2], hbass=filler[3])
 
     def compile(self):

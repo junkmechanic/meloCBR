@@ -3,6 +3,9 @@ from dbconnector import grant_connection
 from casestructure import Case, Note
 from casemaker import get_case
 from operator import itemgetter
+from pprint import pprint
+from itertools import combinations
+from random import randint
 from output import LilyFile
 
 
@@ -37,54 +40,110 @@ def retrieve_cases(inp_case):
     for case in build_cases(query):
         fav_cases.update({case: similarity(inp_case, case)})
     for ele in sorted(fav_cases.items(), key=itemgetter(1), reverse=True):
-        if(ele[1] > 0.8):
-            print(ele)
+        if(ele[1] > 0.2):
+            #print("For case ID : " + str(inp_case['id']) + " --> "
+                  #+ str(ele[0]['id']))
             yield ele
 
 
 def similarity(inp_case, case):
-    s_value = 0.5
-    for note, w in {'sig_note_m1': 0.6, 'sig_note_m2': 0.3,
-                    'sig_note_p1': 0.6, 'sig_note_p2': 0.3}.items():
+    #s_value = 0.3
+    s = 0
+    W = 0
+    for note, w in {'sig_note_m1': 0.7, 'sig_note_m2': 0.3,
+                    'sig_note_p1': 0.5, 'sig_note_p2': 0.2}.items():
+        W += w
         if (inp_case[note] is not None) and (case[note] is not None):
             if inp_case[note]['tone'] == case[note]['tone']:
-                s_value = s_value + w * (1 - s_value)
-    # Change the similarity function to include weighted sum of the different
-    # features. The preceding notes should have larger weights than the ones
-    # following the current note.
+                #s_value = s_value + w * (1 - s_value)
+                s += w
+    s_value = s / W
     return s_value
 
 
-def adapt_case(inp_case, case_list):
+def change_chord(case):
+
+    def major(n):
+        return [(n + 4) % 12 if (n + 4) % 12 != 0 else 12,
+                (n + 7) % 12 if (n + 7) % 12 != 0 else 12, n]
+
+    def minor(n):
+        return [(n + 3) % 12 if (n + 3) % 12 != 0 else 12,
+                (n + 7) % 12 if (n + 7) % 12 != 0 else 12, n]
+
+    def diminished(n):
+        return [(n + 3) % 12 if (n + 3) % 12 != 0 else 12,
+                (n + 6) % 12 if (n + 6) % 12 != 0 else 12, n]
+
+    otrb, omid, obas = [case[note]['tone'] for note in ['htreb', 'hmid',
+                                                        'hbass']]
+    if(case['signif_note']['tone'] in [1, 6, 8]):
+        case['htreb']['tone'], case['hmid']['tone'],\
+            case['hbass']['tone'] = major(case['signif_note']['tone'])
+    elif(case['signif_note']['tone'] in [3, 5, 10]):
+        case['htreb']['tone'], case['hmid']['tone'],\
+            case['hbass']['tone'] = minor(case['signif_note']['tone'])
+    elif(case['signif_note']['tone'] in [12]):
+        case['htreb']['tone'], case['hmid']['tone'],\
+            case['hbass']['tone'] = diminished(case['signif_note']['tone'])
+    print("Note : {0} From {1} to {2}".format(case['signif_note']['tone'],
+          (otrb, omid, obas), (case['htreb']['tone'], case['hmid']['tone'],
+                               case['hbass']['tone'])))
+
+
+def adapt_case(inp, case_list=None, notes=None):
     if case_list:
         best_case, similarity = case_list[0]
-        #if similarity > 0.9:
-        # commenting the above line simply to help in coding the output
-        # generation module.
+        pprint(similarity)
+        #if similarity < 0.9:
+        #    change_chord(best_case)
         for key in ['htreb', 'hmid', 'hbass', 'hother']:
-            inp_case[key] = best_case[key]
+            inp[key] = best_case[key]
+    if notes and (len(notes) == 2):
+        change1 = list(set(['htreb', 'hmid', 'hbass']) - set(notes))[0]
+        r = randint(0, 1)
+        change2 = notes[r]
+        inp[change1], inp[change2] = inp[change2], inp[change1]
 
-    # Include logic for cadences
-    # For non cadence cases, choose a chord from the possible realm,
-    # and match it with the surrounding notes. Next based on the motion of the
-    # preceding harmony, decide on the inversion. A more complex logic to
-    # include the following notes can be intrduced later.
 
+def verify(inp_case, out_buffer):
 
-def process_input():
-    inp_cases = [case for case in get_case('input1')]
-    for case in inp_cases:
-        yield case
+    def check_consec(inp, prev, unit):
+        if unit == 5:
+            d1, d2 = 5, 7
+        note_pos = ['htreb', 'hmid', 'hbass', 'signif_note']
+        for n1, n2 in combinations(note_pos, 2):
+            diff1 = abs(prev[n1]['tone'] - prev[n2]['tone'])
+            diff2 = abs(inp[n1]['tone'] - inp[n2]['tone'])
+            if (diff1 == diff2) and ((diff1 == d1) or (diff1 == d2)):
+                return (True, [n1, n2])
+        return (False, None)
+
+    consec = True
+    round = 1
+    while consec is True:
+        for unit in [5]:
+            consec, notes = check_consec(inp_case, out_buffer[-1], unit)
+            if (consec is True) and (notes is not None):
+                print("Consecutive " + str(unit) + "ths on " + str(notes))
+                adapt_case(inp_case, notes=notes)
+        if round > 6:
+            break
+        else:
+            round += 1
 
 
 def main():
     output_buffer = []
-    for inp_case in process_input():
+    inp = 'input2'
+    for inp_case in get_case(inp):
         cases = [case for case in retrieve_cases(inp_case)]
-        adapt_case(inp_case, cases)
+        adapt_case(inp_case, case_list=cases)
+        if len(output_buffer) > 0:
+            verify(inp_case, output_buffer)
         output_buffer.append(inp_case)
-    #print(output_buffer)
-    LilyFile('input1', output_buffer)
+    #pprint(output_buffer)
+    LilyFile(inp, output_buffer)
 
 if __name__ == '__main__':
     sys.exit(main())

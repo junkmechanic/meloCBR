@@ -102,8 +102,8 @@ def build_case(piece):
     """
     query = "SELECT * FROM " + piece
     with grant_connection() as qdb:
-        nquery = "SELECT Key, Time_Sig, Start FROM METATABLE "
-        "WHERE Table_Name = '" + piece + "'"
+        nquery = "SELECT Key, Time_Sig, Start FROM METATABLE " +\
+                 "WHERE Table_Name = '" + piece + "'"
         metadata = qdb.execute(nquery).fetchone()
         scale = Scale(metadata[0])
         pos_meas = int(metadata[2]) - 1
@@ -231,7 +231,7 @@ def populate_db():
     The cases had to be collected in a list so that all the other connections
     to the database could be closed before committing to it.
     """
-    piece = 'bwv1p6'
+    piece = 'bwv271'
     cases = [case for case in get_case(piece)]
     for case in cases:
         insert_case(case, True)
