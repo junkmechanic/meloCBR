@@ -75,8 +75,12 @@ def change_chord(case):
         return [(n + 3) % 12 if (n + 3) % 12 != 0 else 12,
                 (n + 6) % 12 if (n + 6) % 12 != 0 else 12, n]
 
-    otrb, omid, obas = [case[note]['tone'] for note in ['htreb', 'hmid',
-                                                        'hbass']]
+    try:
+        otrb, omid, obas = [case[note]['tone'] for note in ['htreb', 'hmid',
+                                                            'hbass']]
+    except TypeError:
+        print("Note wasnt assigned harmony and will be suggested one")
+        otrb, omid, obas = ' ', ' ', ' '
     if(case['signif_note']['tone'] in [1, 6, 8]):
         case['htreb']['tone'], case['hmid']['tone'],\
             case['hbass']['tone'] = major(case['signif_note']['tone'])
@@ -94,11 +98,15 @@ def change_chord(case):
 def adapt_case(inp, case_list=None, notes=None):
     if case_list:
         best_case, similarity = case_list[0]
-        pprint(similarity)
-        #if similarity < 0.9:
-        #    change_chord(best_case)
+        pprint("Case " + str(inp['id']) + " : " + str(similarity))
+        if similarity < 0.9:
+            change_chord(best_case)
         for key in ['htreb', 'hmid', 'hbass', 'hother']:
             inp[key] = best_case[key]
+    else:
+        for note in ['htreb', 'hmid', 'hbass']:
+            inp[note] = inp['signif_note']
+        change_chord(inp)
     if notes and (len(notes) == 2):
         change1 = list(set(['htreb', 'hmid', 'hbass']) - set(notes))[0]
         r = randint(0, 1)
@@ -113,8 +121,12 @@ def verify(inp_case, out_buffer):
             d1, d2 = 5, 7
         note_pos = ['htreb', 'hmid', 'hbass', 'signif_note']
         for n1, n2 in combinations(note_pos, 2):
-            diff1 = abs(prev[n1]['tone'] - prev[n2]['tone'])
-            diff2 = abs(inp[n1]['tone'] - inp[n2]['tone'])
+            try:
+                diff1 = abs(prev[n1]['tone'] - prev[n2]['tone'])
+                diff2 = abs(inp[n1]['tone'] - inp[n2]['tone'])
+            except TypeError as e:
+                print e
+                print inp
             if (diff1 == diff2) and ((diff1 == d1) or (diff1 == d2)):
                 return (True, [n1, n2])
         return (False, None)
@@ -135,7 +147,7 @@ def verify(inp_case, out_buffer):
 
 def main():
     output_buffer = []
-    inp = 'input2'
+    inp = 'input3_b359'
     for inp_case in get_case(inp):
         cases = [case for case in retrieve_cases(inp_case)]
         adapt_case(inp_case, case_list=cases)

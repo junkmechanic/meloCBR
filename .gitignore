@@ -4,4 +4,4 @@
 .settings/
 src/__pycache__/
 src/*.pyc
-src/.ropeproject/*
+src/.ropeproject/
